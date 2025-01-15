@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from model import Model
+from rad_embeddings.model import Model
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 class TokenEnvFeaturesExtractor(BaseFeaturesExtractor):

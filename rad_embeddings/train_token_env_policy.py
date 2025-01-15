@@ -4,7 +4,7 @@ import gymnasium as gym
 from encoder import Encoder
 from dfa_gym import DFAWrapper
 from stable_baselines3 import PPO
-from utils import TokenEnvFeaturesExtractor, LoggerCallback
+from rad_embeddings.utils import TokenEnvFeaturesExtractor, LoggerCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.env_checker import check_env
 from dfa_samplers import ReachSampler, ReachAvoidSampler, RADSampler

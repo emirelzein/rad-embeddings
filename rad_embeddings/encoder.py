@@ -2,9 +2,8 @@ import numpy as np
 from dfa import DFA
 from dfa_gym import DFAEnv
 from stable_baselines3 import PPO
-from utils import dfa2obs
+from rad_embeddings.utils import dfa2obs, DFAEnvFeaturesExtractor, LoggerCallback
 import gymnasium as gym
-from utils import DFAEnvFeaturesExtractor, LoggerCallback
 from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnNoModelImprovement
 
 class Encoder():

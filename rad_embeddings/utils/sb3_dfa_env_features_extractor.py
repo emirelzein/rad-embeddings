@@ -1,5 +1,5 @@
-from model import Model
-from utils.utils import feature_inds, obs2feat
+from rad_embeddings.model import Model
+from rad_embeddings.utils.utils import feature_inds, obs2feat
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 class DFAEnvFeaturesExtractor(BaseFeaturesExtractor):
