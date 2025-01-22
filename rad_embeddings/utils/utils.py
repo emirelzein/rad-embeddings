@@ -12,11 +12,19 @@ feature_inds = {"temp": -5, "rejecting": -4, "accepting": -3, "init": -2, "norma
 
 def obs2feat(dfa_obs, n_tokens):
     if dfa_obs.ndim == 1:
-        return _obs2feat(dfa_obs, n_tokens=n_tokens)
+        return _process_data(Batch.from_data_list([_obs2feat(dfa_obs, n_tokens=n_tokens)]))
     elif dfa_obs.ndim == 2:
-        return Batch.from_data_list(list(map(lambda x: _obs2feat(x, n_tokens=n_tokens), dfa_obs)))
+        return _process_data(Batch.from_data_list(list(map(lambda x: _obs2feat(x, n_tokens=n_tokens), dfa_obs))))
     else:
         raise ValueError(f"Invalid ndim for dfa_obs: expected 1 or 2, but got {dfa_obs.ndim}")
+
+def _process_data(data: Data | Batch):
+    max_i = data.n_nodes.max().item()
+    node_mask = torch.tensor([data.n_nodes[i] for i in range(data.batch_size) for _ in range(data.n_nodes[i])])
+    edge_mask = torch.tensor([data.n_nodes[i] for i in range(data.batch_size) for _ in range(data.n_edges[i])])
+    data.active_node_indices = torch.stack([i < node_mask for i in range(max_i)])
+    data.active_edge_indices = torch.stack([i < edge_mask for i in range(max_i)])
+    return data
 
 def _obs2feat(dfa_obs, n_tokens):
     tokens = list(range(n_tokens))
@@ -61,9 +69,9 @@ def _obs2feat(dfa_obs, n_tokens):
                     if (t_idx, s_idx) not in edges:
                         edges.append((t_idx, s_idx))
     feat = torch.from_numpy(np.array(list(nodes.values())))
-    edge_index = torch.from_numpy(np.array(edges))
+    edge_index = torch.from_numpy(np.array(edges)).T
     current_state = torch.from_numpy(np.array([1] + [0] * (len(nodes) - 1))) # 0 is the current state
-    return Data(feat=feat, edge_index=edge_index.T, current_state=current_state)
+    return Data(feat=feat, edge_index=edge_index, current_state=current_state, n_nodes=len(nodes), n_edges=len(edges))
 
 def dfa2obs(dfa: DFA) -> Data:
     return np.array([int(i) for i in str(dfa.to_int())])
@@ -83,3 +91,27 @@ def dfa2dist(dfa_obs, n_tokens):
         dist = 0
 
     return dist
+
+def get_model(env_id, save_dir, alg, seed):
+    from utils.config import get_config
+    assert alg == "PPO" or alg == "DQN"
+    config = get_config(env_id, save_dir, alg, seed)
+    if alg == "DQN":
+        if "Bisim" in env_id:
+            from dqn import DQN
+            return DQN(**config), config
+        else:
+            from stable_baselines3 import DQN
+            return DQN(**config), config
+    else:
+        from stable_baselines3 import PPO
+        return PPO(**config), config
+
+def load_model(load_file):
+    from stable_baselines3 import PPO
+    model = PPO.load(load_file)
+    model.set_parameters(load_file)
+    for param in model.policy.parameters():
+        param.requires_grad = False
+    model.policy.eval()
+    return model

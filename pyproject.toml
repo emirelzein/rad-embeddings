@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "dfa-gym>=0.1.0",
+    "dfa-samplers",
+    "scikit-learn>=1.6.1",
+    "seaborn>=0.13.2",
     "stable-baselines3>=2.4.1",
     "tensorboard>=2.18.0",
     "token-env>=0.2.1",
@@ -16,3 +19,8 @@ dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.uv.sources]
+dfa-gym = { path = "../dfa-gym" }
+dfa-samplers = { path = "../dfa-samplers" }
+token-env = { path = "../token-env" }
