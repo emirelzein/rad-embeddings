@@ -16,21 +16,6 @@ class Model(nn.Module):
         self.activation = nn.Tanh()
         self.g_embed = nn.Linear(self.hidden_dim, self.output_dim)
 
-    # def forward(self, data):
-    #     feat = data.feat
-    #     edge_index = data.edge_index
-    #     current_state = data.current_state
-    #     h_0 = self.linear_in(feat.float())
-    #     h = h_0
-    #     for _ in range(8):
-    #         h = self.conv(
-    #             torch.cat([h, h_0], 1),
-    #             edge_index
-    #         ).view(-1, self.n_heads, self.hidden_dim).sum(1)
-    #         h = self.activation(h)
-    #     hg = h[current_state.bool()]
-    #     return self.g_embed(hg)
-
     def forward(self, data):
         feat = data.feat
         edge_index = data.edge_index

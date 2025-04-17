@@ -10,15 +10,18 @@ from encoder import Encoder
 
 if __name__ == "__main__":
 
-    SEED = int(sys.argv[1])
+    try:
+        SEED = int(sys.argv[1])
+    except:
+        SEED = 42
 
     random.seed(SEED)
     np.random.seed(SEED)
     torch.manual_seed(SEED)
 
-    env_id = "DFAEnv-v1"
+    env_id = "DFABisimEnv-v1"
     encoder_id = env_id + "-encoder"
-    save_dir = "exps_baseline"
+    save_dir = "storage"
 
     Encoder.train(env_id=env_id, save_dir=save_dir, alg="PPO", id=encoder_id, seed=SEED)
 
