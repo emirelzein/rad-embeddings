@@ -1,3 +1,7 @@
+import os
+# Fix for MPS device compatibility issues
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+
 import argparse
 import torch
 import token_env
@@ -5,7 +9,7 @@ import gymnasium as gym
 from encoder import Encoder
 from dfa_gym import DFAWrapper
 from stable_baselines3 import PPO
-from rad_embeddings.utils import TokenEnvFeaturesExtractor, LoggerCallback
+from rad_embeddings.utils import TokenEnvFeaturesExtractor, TokenEnvLLMFeaturesExtractor, LoggerCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.utils import set_random_seed
@@ -14,6 +18,7 @@ from dfa_samplers import ReachSampler, ReachAvoidSampler, RADSampler
 parser = argparse.ArgumentParser(description="Train policy for TokenEnv with optional encoder")
 parser.add_argument("--seed", type=int, required=True, help="Random seed for training")
 parser.add_argument("--encoder-file", type=str, default=None, help="Path to encoder file (optional)")
+parser.add_argument("--llm", action="store_true", help="Use LLM features")
 args = parser.parse_args()
 
 SEED = args.seed
@@ -36,6 +41,17 @@ if args.encoder_file:
 else:
     encoder = None
 
+if args.llm:
+    features_extractor_class = TokenEnvLLMFeaturesExtractor
+    features_extractor_kwargs=dict(
+        features_dim=1056,
+        n_tokens=n_tokens,
+        embed_model_name="sentence-transformers/all-MiniLM-L6-v2",
+    )
+else:
+    features_extractor_class = TokenEnvFeaturesExtractor
+    features_extractor_kwargs = dict(features_dim=1056, encoder=encoder)
+
 config = dict(
     policy = "MultiInputPolicy",
     env = env,
@@ -43,8 +59,8 @@ config = dict(
     batch_size = 256,
     gamma = 0.99,
     policy_kwargs = dict(
-        features_extractor_class=TokenEnvFeaturesExtractor,
-        features_extractor_kwargs=dict(features_dim=1056, encoder=encoder),
+        features_extractor_class=features_extractor_class,
+        features_extractor_kwargs=features_extractor_kwargs,
         net_arch=dict(pi=[64, 64, 64], vf=[64, 64]),
         share_features_extractor=True,
         activation_fn=torch.nn.ReLU
