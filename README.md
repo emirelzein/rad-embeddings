@@ -15,7 +15,7 @@ You can pip-install it.
 pip install rad-embeddings
 ```
 
-You quickly train a DFA encoder, which converges pretty quickly.
+You train a DFA encoder, which converges pretty quickly.
 
 ```
 import dfa_gym
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 # Citation (Repo)
 
 ```
-@misc{highway-env,
+@misc{rad-embd,
   author = {Yalcinkaya, Beyazit and Lauffer, Niklas and Vazquez-Chanlatte, Marcell and Seshia, Sanjit A},
   title = {RAD Embeddings},
   year = {2025},
