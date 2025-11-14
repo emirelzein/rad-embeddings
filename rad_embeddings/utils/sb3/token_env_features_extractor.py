@@ -30,7 +30,7 @@ class TokenEnvFeaturesExtractor(BaseFeaturesExtractor):
         if self.is_pretrained:
             dfa_obs = dict_obs["dfa_obs"]
             obs = dict_obs["obs"]
-            rad = self.encoder.obs2rad(dfa_obs)
+            rad = self.model.obs2rad(dfa_obs)
             obs = self.image_conv(obs)
             obs = torch.cat((obs, rad), dim=1)
             return obs
