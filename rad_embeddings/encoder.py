@@ -15,19 +15,35 @@ from utils.sb3.dfa_env_features_extractor import DFAEnvFeaturesExtractor
 from utils.sb3.dfa_bisim_env_features_extractor import DFABisimEnvFeaturesExtractor
 
 class Encoder():
-    def __init__(self, load_file: str):
-        model = PPO.load(load_file)
+    def __init__(self, load_file: str, device: str = "auto"):
+        import torch
+        
+        # Determine device
+        if device == "auto":
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        # Load model on the correct device
+        model = PPO.load(load_file, device=device)
         model.set_parameters(load_file)
+        
+        # Move policy to device and set to eval
+        model.policy.to(device)
         for param in model.policy.parameters():
             param.requires_grad = False
         model.policy.eval()
+        
+        self.device = device
         self.n_tokens = model.policy.features_extractor.n_tokens
         self.obs2rad = model.policy.features_extractor.obs2rad
         self.rad2token = lambda _rad: model.policy.action_net(_rad).argmax(dim=1)
 
     def dfa2rad(self, dfa: DFA) -> np.array:
+        import torch
         assert len(dfa.inputs) == self.n_tokens
         obs = dfa2obs(dfa)
+        # Ensure obs is on the correct device
+        if isinstance(obs, torch.Tensor):
+            obs = obs.to(self.device)
         rad = self.obs2rad(obs)
         return rad
 

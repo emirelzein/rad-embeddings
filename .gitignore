@@ -176,3 +176,5 @@ cython_debug/
 # repo
 wandb
 storage
+rad_embeddings/exps_no_embed/
+exps_no_embed/

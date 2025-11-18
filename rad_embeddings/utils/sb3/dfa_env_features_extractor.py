@@ -11,7 +11,10 @@ class DFAEnvFeaturesExtractor(BaseFeaturesExtractor):
         self.n_tokens = n_tokens
 
     def forward(self, obs):
-        return self.model(obs2feat(obs, n_tokens=self.n_tokens))
+        feat = obs2feat(obs, n_tokens=self.n_tokens)
+        # Ensure feat is on the same device as the model
+        feat = feat.to(next(self.model.parameters()).device)
+        return self.model(feat)
 
     def obs2rad(self, obs):
         return self.forward(obs)

@@ -18,5 +18,7 @@ class DFABisimEnvFeaturesExtractor(BaseFeaturesExtractor):
 
     def obs2rad(self, obs):
         feat = obs2feat(obs, n_tokens=self.n_tokens)
+        # Ensure feat is on the same device as the model
+        feat = feat.to(next(self.model.parameters()).device)
         rad = self.model(feat)
         return rad

@@ -39,7 +39,8 @@ env_kwargs = dict(env_id=env_id, sampler=reach_avoid_sampler, label_f=token_env.
 env = make_vec_env(DFAWrapper, env_kwargs=env_kwargs, n_envs=n_envs)
 
 if args.encoder_file:
-    encoder = Encoder(load_file=args.encoder_file)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    encoder = Encoder(load_file=args.encoder_file, device=device)
 else:
     encoder = None
 

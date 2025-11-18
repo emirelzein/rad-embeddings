@@ -35,7 +35,10 @@ class TokenEnvFeaturesExtractor(BaseFeaturesExtractor):
             obs = torch.cat((obs, rad), dim=1)
             return obs
         else:
-            rad = self.model(obs2feat(dict_obs["dfa_obs"], n_tokens=self.n_tokens))
+            feat = obs2feat(dict_obs["dfa_obs"], n_tokens=self.n_tokens)
+            # Ensure feat is on the same device as the model
+            feat = feat.to(next(self.model.parameters()).device)
+            rad = self.model(feat)
             obs = self.image_conv(dict_obs["obs"])
             obs = torch.cat((obs, rad), dim=1)
             return obs
