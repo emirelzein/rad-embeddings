@@ -4,6 +4,8 @@ os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 
 import argparse
 import torch
+import wandb
+from wandb.integration.sb3 import WandbCallback
 import token_env
 import gymnasium as gym
 from encoder import Encoder
@@ -48,9 +50,28 @@ if args.llm:
         n_tokens=n_tokens,
         embed_model_name="sentence-transformers/all-MiniLM-L6-v2",
     )
+    exp_name = "llm"
 else:
     features_extractor_class = TokenEnvFeaturesExtractor
     features_extractor_kwargs = dict(features_dim=1056, encoder=encoder)
+    exp_name = "encoder" if encoder else "no_encoder"
+
+# Initialize Wandb for policy training
+wandb.init(
+    project="rad-embeddings-policy",
+    name=f"policy_{exp_name}_seed_{SEED}",
+    config={
+        "seed": SEED,
+        "env_id": env_id,
+        "n_envs": n_envs,
+        "algorithm": "PPO",
+        "features_extractor": exp_name,
+        "encoder_file": args.encoder_file,
+        "llm": args.llm,
+    },
+    group="policy_training",
+    tags=["policy", exp_name, f"seed_{SEED}"],
+)
 
 config = dict(
     policy = "MultiInputPolicy",
@@ -74,8 +95,22 @@ model = PPO(**config)
 print("Total number of parameters:", sum(p.numel() for p in model.policy.parameters() if p.requires_grad))
 print(model.policy)
 
-logger_callback = LoggerCallback(gamma=config["gamma"])
+# Log model architecture to wandb
+wandb.config.update({
+    "total_parameters": sum(p.numel() for p in model.policy.parameters() if p.requires_grad)
+})
 
-model.learn(1_000_000, callback=[logger_callback])
+# Combine callbacks
+callbacks = [
+    LoggerCallback(gamma=config["gamma"]),
+    WandbCallback(
+        model_save_path=f"exps_no_embed/wandb_models/policy_seed{SEED}",
+        verbose=2,
+    )
+]
+
+model.learn(1_000_000, callback=callbacks)
 model.save(f"exps_no_embed/token_env_reach_avoid_policy_seed{SEED}")
+
+wandb.finish()
 

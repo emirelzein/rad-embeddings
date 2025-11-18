@@ -1,6 +1,8 @@
 import numpy as np
 from dfa import DFA
 import gymnasium as gym
+import wandb
+from wandb.integration.sb3 import WandbCallback
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
@@ -75,6 +77,15 @@ class Encoder():
         print("Total number of parameters:", sum(p.numel() for p in model.policy.parameters() if p.requires_grad))
         print(model.policy)
 
-        model.learn(1_000_000, callback=LoggerCallback(gamma=config["gamma"]))
+        # Combine WandbCallback with LoggerCallback
+        callbacks = [
+            LoggerCallback(gamma=config["gamma"]),
+            WandbCallback(
+                model_save_path=f"{save_dir}/wandb_models/{id}_{seed}",
+                verbose=2,
+            )
+        ]
+
+        model.learn(1_000_000, callback=callbacks)
         model.save(f"{save_dir}/{id}_{seed}")
 

@@ -34,17 +34,44 @@ class LoggerCallback(BaseCallback):
         return True
 
     def _on_rollout_end(self):
+        if len(self.episode_lengths) == 0:
+            return  # No episodes completed yet
+        
         ep_len_min = np.min(self.episode_lengths)
         ep_len_max = np.max(self.episode_lengths)
+        ep_len_mean = np.mean(self.episode_lengths)
         ep_len_std = np.std(self.episode_lengths)
         ep_rew_min = np.min(self.rewards)
         ep_rew_max = np.max(self.rewards)
+        ep_rew_mean = np.mean(self.rewards)
         ep_rew_std = np.std(self.rewards)
         ep_disc_rew_mean = np.mean(self.discounted_rewards)
+        ep_disc_rew_std = np.std(self.discounted_rewards)
+        
+        # Log to both tensorboard and wandb (wandb callback will pick these up)
         self.logger.record("rollout/ep_len_min", ep_len_min)
         self.logger.record("rollout/ep_len_max", ep_len_max)
+        self.logger.record("rollout/ep_len_mean", ep_len_mean)
         self.logger.record("rollout/ep_len_std", ep_len_std)
         self.logger.record("rollout/ep_rew_min", ep_rew_min)
         self.logger.record("rollout/ep_rew_max", ep_rew_max)
+        self.logger.record("rollout/ep_rew_mean", ep_rew_mean)
         self.logger.record("rollout/ep_rew_std", ep_rew_std)
         self.logger.record("rollout/ep_rew_disc_mean", ep_disc_rew_mean)
+        self.logger.record("rollout/ep_rew_disc_std", ep_disc_rew_std)
+
+        # EXPLICITLY log to wandb to ensure it shows up in charts
+        import wandb
+        if wandb.run is not None:
+            wandb.log({
+                "rollout/ep_len_min": ep_len_min,
+                "rollout/ep_len_max": ep_len_max,
+                "rollout/ep_len_mean": ep_len_mean,
+                "rollout/ep_len_std": ep_len_std,
+                "rollout/ep_rew_min": ep_rew_min,
+                "rollout/ep_rew_max": ep_rew_max,
+                "rollout/ep_rew_mean": ep_rew_mean,
+                "rollout/ep_rew_std": ep_rew_std,
+                "rollout/ep_rew_disc_mean": ep_disc_rew_mean,
+                "rollout/ep_rew_disc_std": ep_disc_rew_std,
+            }, step=self.num_timesteps)

@@ -2,6 +2,7 @@ import sys
 import torch
 import random
 import numpy as np
+import wandb
 
 import dfa_gym
 from dfa import DFA
@@ -23,7 +24,22 @@ if __name__ == "__main__":
     encoder_id = env_id + "-encoder"
     save_dir = "storage"
 
+    # Initialize Wandb for encoder training
+    wandb.init(
+        project="rad-embeddings-encoder",
+        name=f"encoder_seed_{SEED}",
+        config={
+            "seed": SEED,
+            "env_id": env_id,
+            "algorithm": "PPO",
+        },
+        group="encoder_training",
+        tags=["encoder", f"seed_{SEED}"],
+    )
+
     Encoder.train(env_id=env_id, save_dir=save_dir, alg="PPO", id=encoder_id, seed=SEED)
+    
+    wandb.finish()
 
     # encoder = Encoder(load_file=f"{save_dir}/{encoder_id}")
 
