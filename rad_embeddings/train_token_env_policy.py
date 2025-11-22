@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser(description="Train policy for TokenEnv with opt
 parser.add_argument("--seed", type=int, required=True, help="Random seed for training")
 parser.add_argument("--encoder-file", type=str, default=None, help="Path to encoder file (optional)")
 parser.add_argument("--llm", action="store_true", help="Use LLM features")
+parser.add_argument("--english-dfa", action="store_true", help="Use English description for DFA (only with --llm)")
 args = parser.parse_args()
 
 SEED = args.seed
@@ -50,8 +51,9 @@ if args.llm:
         features_dim=1056,
         n_tokens=n_tokens,
         embed_model_name="sentence-transformers/all-MiniLM-L6-v2",
+        use_english_description=args.english_dfa,
     )
-    exp_name = "llm"
+    exp_name = "llm_english" if args.english_dfa else "llm"
 else:
     features_extractor_class = TokenEnvFeaturesExtractor
     features_extractor_kwargs = dict(features_dim=1056, encoder=encoder)
@@ -69,6 +71,7 @@ wandb.init(
         "features_extractor": exp_name,
         "encoder_file": args.encoder_file,
         "llm": args.llm,
+        "english_dfa": args.english_dfa,
     },
     group="policy_training",
     tags=["policy", exp_name, f"seed_{SEED}"],

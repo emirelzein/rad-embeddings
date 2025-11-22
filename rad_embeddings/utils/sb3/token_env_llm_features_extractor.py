@@ -20,10 +20,12 @@ class TokenEnvLLMFeaturesExtractor(BaseFeaturesExtractor):
         features_dim: int,
         embed_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
         n_tokens: int = 10,
+        use_english_description: bool = False,
     ):
         super().__init__(observation_space, features_dim)
         self.n_tokens = n_tokens
         self.embed_model_name = embed_model_name
+        self.use_english_description = use_english_description
 
         # Load embedding model once
         self._embedder = SentenceTransformer(self.embed_model_name)
@@ -97,6 +99,83 @@ class TokenEnvLLMFeaturesExtractor(BaseFeaturesExtractor):
         return int(bits)
 
     def _dfa_int_to_text(self, dfa_int: int) -> str:
+        """
+        Convert a DFA to text representation.
+        Uses either the original repr() format or a deterministic English description.
+        """
         tokens = list(range(self.n_tokens))
         dfa = DFA.from_int(dfa_int, tokens)
-        return repr(dfa)
+        
+        if not self.use_english_description:
+            # Original representation using repr()
+            return repr(dfa)
+        
+        # New English language description
+        dfa_dict, s_init = dfa2dict(dfa)
+        
+        # Build deterministic English description
+        parts = []
+        
+        # Number of states
+        n_states = len(dfa_dict)
+        parts.append(f"A deterministic finite automaton with {n_states} state{'s' if n_states != 1 else ''}.")
+        
+        # Initial state
+        parts.append(f"The initial state is state {s_init}.")
+        
+        # Classify states
+        accepting_states = []
+        rejecting_states = []
+        normal_states = []
+        
+        for state in sorted(dfa_dict.keys()):
+            label, transitions = dfa_dict[state]
+            has_leaving = any(transitions[token] != state for token in transitions.keys())
+            
+            if label:  # Accepting state
+                accepting_states.append(state)
+            elif not has_leaving:  # Rejecting state (no outgoing transitions)
+                rejecting_states.append(state)
+            else:  # Normal state
+                normal_states.append(state)
+        
+        # Describe accepting states
+        if accepting_states:
+            if len(accepting_states) == 1:
+                parts.append(f"State {accepting_states[0]} is an accepting state.")
+            else:
+                states_str = ", ".join(map(str, accepting_states[:-1])) + f" and {accepting_states[-1]}"
+                parts.append(f"States {states_str} are accepting states.")
+        
+        # Describe rejecting states
+        if rejecting_states:
+            if len(rejecting_states) == 1:
+                parts.append(f"State {rejecting_states[0]} is a rejecting state.")
+            else:
+                states_str = ", ".join(map(str, rejecting_states[:-1])) + f" and {rejecting_states[-1]}"
+                parts.append(f"States {states_str} are rejecting states.")
+        
+        # Describe transitions
+        parts.append("The transitions are as follows:")
+        for state in sorted(dfa_dict.keys()):
+            label, transitions = dfa_dict[state]
+            # Group transitions by destination
+            dest_to_tokens = {}
+            for token in sorted(transitions.keys()):
+                dest = transitions[token]
+                if dest not in dest_to_tokens:
+                    dest_to_tokens[dest] = []
+                dest_to_tokens[dest].append(token)
+            
+            # Describe each transition group
+            for dest in sorted(dest_to_tokens.keys()):
+                token_list = dest_to_tokens[dest]
+                if len(token_list) == 1:
+                    parts.append(f"From state {state}, on token {token_list[0]}, go to state {dest}.")
+                elif len(token_list) == 2:
+                    parts.append(f"From state {state}, on tokens {token_list[0]} or {token_list[1]}, go to state {dest}.")
+                else:
+                    tokens_str = ", ".join(map(str, token_list[:-1])) + f" or {token_list[-1]}"
+                    parts.append(f"From state {state}, on tokens {tokens_str}, go to state {dest}.")
+
+        return " ".join(parts)
